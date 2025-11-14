@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Price PDF Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .test-item {
+            display: grid;
+            grid-template-columns: 2fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 8px;
+            align-items: end;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(72, 187, 120, 0.4);
+        }
+        
+        .btn-danger {
+            background: #f56565;
+            color: white;
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+        
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .tests-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 10px;
+        }
+        
+        .section-title {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #999;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Test Price PDF Generator</h1>
+        <p class="subtitle">Generate professional PDF quotes for diagnostic tests</p>
+        
+        <div class="form-group">
+            <label for="companyName">Company Name *</label>
+            <input type="text" id="companyName" placeholder="Enter company name" required>
+        </div>
+        
+        <div class="tests-section">
+            <h3 class="section-title">Tests & Prices</h3>
+            <div id="testsList"></div>
+            <button class="btn btn-secondary" onclick="addTest()">+ Add Test</button>
+        </div>
+        
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="generatePDF()">📄 Generate PDF</button>
+        </div>
+        
+        <div class="footer">
+            <p>City Pathology Laboratory © 2025</p>
+        </div>
+    </div>
+
+    <script>
+        let testCount = 0;
+        
+        // Add initial test field
+        window.onload = function() {
+            addTest();
+        };
+        
+        function addTest() {
+            testCount++;
+            const testsList = document.getElementById('testsList');
+            const testItem = document.createElement('div');
+            testItem.className = 'test-item';
+            testItem.id = 'test-' + testCount;
+            testItem.innerHTML = `
+                <div>
+                    <label>Test Name</label>
+                    <input type="text" id="testName${testCount}" placeholder="e.g., Complete Blood Count">
+                </div>
+                <div>
+                    <label>Price (₹)</label>
+                    <input type="number" id="testPrice${testCount}" placeholder="0" min="0">
+                </div>
+                <button class="btn btn-danger" onclick="removeTest('test-${testCount}')">✕</button>
+            `;
+            testsList.appendChild(testItem);
+        }
+        
+        function removeTest(testId) {
+            if (document.querySelectorAll('.test-item').length > 1) {
+                document.getElementById(testId).remove();
+            } else {
+                alert('At least one test is required!');
+            }
+        }
+        
+        function generatePDF() {
+            const companyName = document.getElementById('companyName').value.trim();
+            
+            if (!companyName) {
+                alert('Please enter company name!');
+                return;
+            }
+            
+            // Collect all tests
+            const tests = [];
+            const testItems = document.querySelectorAll('.test-item');
+            
+            testItems.forEach((item) => {
+                const testNameInput = item.querySelector('input[type="text"]');
+                const testPriceInput = item.querySelector('input[type="number"]');
+                
+                if (testNameInput && testPriceInput) {
+                    const testName = testNameInput.value.trim();
+                    const testPrice = parseFloat(testPriceInput.value) || 0;
+                    
+                    if (testName) {
+                        tests.push({ name: testName, price: testPrice });
+                    }
+                }
+            });
+            
+            if (tests.length === 0) {
+                alert('Please add at least one test with a name!');
+                return;
+            }
+            
+            // Generate PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header
+            doc.setFillColor(102, 126, 234);
+            doc.rect(0, 0, 210, 40, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.setFont(undefined, 'bold');
+            doc.text('City Pathology Laboratory', 105, 15, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'normal');
+            doc.text('Diagnostic Test Price Quote', 105, 25, { align: 'center' });
+            doc.text('www.citypathlab.in', 105, 33, { align: 'center' });
+            
+            // Company Info
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('Company Name:', 20, 55);
+            
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(12);
+            doc.text(companyName, 20, 63);
+            
+            // Date
+            const date = new Date().toLocaleDateString('en-IN');
+            doc.setFontSize(10);
+            doc.text('Date: ' + date, 150, 55);
+            
+            // Tests Table
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('Test Details:', 20, 80);
+            
+            // Table header
+            doc.setFillColor(240, 240, 240);
+            doc.rect(20, 87, 170, 10, 'F');
+            
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text('S.No', 25, 94);
+            doc.text('Test Name', 50, 94);
+            doc.text('Price (₹)', 160, 94);
+            
+            // Table rows
+            doc.setFont(undefined, 'normal');
+            let yPos = 104;
+            let total = 0;
+            
+            tests.forEach((test, index) => {
+                doc.text((index + 1).toString(), 25, yPos);
+                doc.text(test.name, 50, yPos);
+                doc.text(test.price.toFixed(2), 160, yPos);
+                
+                total += test.price;
+                yPos += 10;
+                
+                // Draw line
+                doc.setDrawColor(200, 200, 200);
+                doc.line(20, yPos - 3, 190, yPos - 3);
+            });
+            
+            // Total
+            yPos += 5;
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(12);
+            doc.text('Total Amount:', 120, yPos);
+            doc.text('₹ ' + total.toFixed(2), 160, yPos);
+            
+            // Footer
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'normal');
+            doc.setTextColor(100, 100, 100);
+            doc.text('This is a computer-generated quote. For queries, contact us at citypathlab.in', 105, 280, { align: 'center' });
+            
+            // Save PDF
+            const fileName = `${companyName.replace(/\s+/g, '_')}_Test_Quote.pdf`;
+            doc.save(fileName);
+            
+            alert('PDF generated successfully!');
+        }
+    </script>
+</body>
+</html>
