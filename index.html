@@ -73,13 +73,13 @@
         
         .test-item {
             display: grid;
-            grid-template-columns: 2fr 1fr auto;
+            grid-template-columns: 1fr auto;
             gap: 10px;
             margin-bottom: 15px;
             padding: 15px;
             background: #f8f9ff;
             border-radius: 8px;
-            align-items: end;
+            align-items: center;
         }
         
         .btn {
@@ -153,6 +153,11 @@
             color: #999;
             font-size: 12px;
         }
+        
+        .price-highlight {
+            background: #e6f2ff;
+            border-left: 4px solid #667eea;
+        }
     </style>
 </head>
 <body>
@@ -165,8 +170,13 @@
             <input type="text" id="companyName" placeholder="Enter company name" required>
         </div>
         
+        <div class="form-group price-highlight">
+            <label for="totalPrice">Total Price (₹) *</label>
+            <input type="number" id="totalPrice" placeholder="Enter total price" min="0" required>
+        </div>
+        
         <div class="tests-section">
-            <h3 class="section-title">Tests & Prices</h3>
+            <h3 class="section-title">Tests List</h3>
             <div id="testsList"></div>
             <button class="btn btn-secondary" onclick="addTest()">+ Add Test</button>
         </div>
@@ -195,14 +205,7 @@
             testItem.className = 'test-item';
             testItem.id = 'test-' + testCount;
             testItem.innerHTML = `
-                <div>
-                    <label>Test Name</label>
-                    <input type="text" id="testName${testCount}" placeholder="e.g., Complete Blood Count">
-                </div>
-                <div>
-                    <label>Price (₹)</label>
-                    <input type="number" id="testPrice${testCount}" placeholder="0" min="0">
-                </div>
+                <input type="text" id="testName${testCount}" placeholder="e.g., Complete Blood Count" style="width: 100%;">
                 <button class="btn btn-danger" onclick="removeTest('test-${testCount}')">✕</button>
             `;
             testsList.appendChild(testItem);
@@ -218,9 +221,15 @@
         
         function generatePDF() {
             const companyName = document.getElementById('companyName').value.trim();
+            const totalPrice = parseFloat(document.getElementById('totalPrice').value) || 0;
             
             if (!companyName) {
                 alert('Please enter company name!');
+                return;
+            }
+            
+            if (!totalPrice || totalPrice <= 0) {
+                alert('Please enter a valid total price!');
                 return;
             }
             
@@ -230,14 +239,12 @@
             
             testItems.forEach((item) => {
                 const testNameInput = item.querySelector('input[type="text"]');
-                const testPriceInput = item.querySelector('input[type="number"]');
                 
-                if (testNameInput && testPriceInput) {
+                if (testNameInput) {
                     const testName = testNameInput.value.trim();
-                    const testPrice = parseFloat(testPriceInput.value) || 0;
                     
                     if (testName) {
-                        tests.push({ name: testName, price: testPrice });
+                        tests.push(testName);
                     }
                 }
             });
@@ -293,20 +300,26 @@
             doc.setFont(undefined, 'bold');
             doc.text('S.No', 25, 94);
             doc.text('Test Name', 50, 94);
-            doc.text('Price (₹)', 160, 94);
             
             // Table rows
             doc.setFont(undefined, 'normal');
             let yPos = 104;
-            let total = 0;
             
             tests.forEach((test, index) => {
-                doc.text((index + 1).toString(), 25, yPos);
-                doc.text(test.name, 50, yPos);
-                doc.text(test.price.toFixed(2), 160, yPos);
+                // Check if we need a new page
+                if (yPos > 270) {
+                    doc.addPage();
+                    yPos = 20;
+                }
                 
-                total += test.price;
-                yPos += 10;
+                doc.text((index + 1).toString(), 25, yPos);
+                
+                // Wrap long test names
+                const maxWidth = 140;
+                const lines = doc.splitTextToSize(test, maxWidth);
+                doc.text(lines, 50, yPos);
+                
+                yPos += (lines.length * 7) + 3;
                 
                 // Draw line
                 doc.setDrawColor(200, 200, 200);
@@ -318,7 +331,7 @@
             doc.setFont(undefined, 'bold');
             doc.setFontSize(12);
             doc.text('Total Amount:', 120, yPos);
-            doc.text('₹ ' + total.toFixed(2), 160, yPos);
+            doc.text('₹ ' + totalPrice.toFixed(2), 160, yPos);
             
             // Footer
             doc.setFontSize(9);
